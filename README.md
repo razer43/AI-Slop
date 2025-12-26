@@ -3,7 +3,7 @@
 **Little Meadow Garden** is a cozy, cottagecore mini garden you can plant and water until everything blooms — no stress, no losing.
 
 - **Repo**: [`https://github.com/razer43/AI-Slop.git`](https://github.com/razer43/AI-Slop.git)
-- **Live (GitHub Pages)**: enable Pages, then open `https://razer43.github.io/AI-Slop/`
+- **Live (GitHub Pages)**: enable Pages, then open [`https://razer43.github.io/AI-Slop/`](https://razer43.github.io/AI-Slop/)
 
 ## How to play
 
