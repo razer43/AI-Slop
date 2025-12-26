@@ -1,0 +1,1375 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Little Meadow Garden — a cozy cottagecore game</title>
+  <style>
+    :root{
+      --cream:#fbf4e8;
+      --cream2:#f7eedf;
+      --sage:#93b7a1;
+      --sage2:#b9d6c6;
+      --lav:#b9a8d9;
+      --rose:#d88aa7;
+      --sun:#f2c35f;
+      --daisy:#f1f2f4;
+
+      --ink:#2b2a28;
+      --softink:#3a3530;
+      --wood1:#a8744a;
+      --wood2:#8a5c39;
+
+      --shadow: 0 10px 25px rgba(43,42,40,.12);
+      --shadow2: 0 6px 16px rgba(43,42,40,.14);
+      --radius: 18px;
+      --radius2: 14px;
+
+      --grid: 4;
+      --tile: 96px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      color:var(--ink);
+      font-family: ui-serif, Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+      background:
+        radial-gradient(1100px 700px at 22% 18%, rgba(185,168,217,.28), transparent 65%),
+        radial-gradient(900px 600px at 78% 20%, rgba(147,183,161,.28), transparent 60%),
+        radial-gradient(1000px 700px at 50% 95%, rgba(216,138,167,.18), transparent 55%),
+        linear-gradient(180deg, var(--cream), var(--cream2));
+      overflow-x:hidden;
+    }
+
+    /* soft paper grain (no external assets, just layered gradients) */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:.33;
+      background:
+        repeating-linear-gradient(0deg, rgba(43,42,40,.02) 0 1px, transparent 1px 3px),
+        repeating-linear-gradient(90deg, rgba(43,42,40,.014) 0 1px, transparent 1px 4px);
+      mix-blend-mode:multiply;
+    }
+
+    .wrap{
+      width:min(1060px, 96vw);
+      margin: 22px auto 30px;
+      padding: 14px;
+      position:relative;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .title{
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(43,42,40,.08);
+      position:relative;
+      overflow:hidden;
+      min-width: 280px;
+    }
+
+    .title::after{
+      content:"";
+      position:absolute; inset:-40px -40px auto auto;
+      width:160px; height:160px;
+      background: radial-gradient(circle at 30% 30%, rgba(242,195,95,.22), transparent 55%),
+                  radial-gradient(circle at 60% 60%, rgba(185,168,217,.22), transparent 55%);
+      transform: rotate(15deg);
+      pointer-events:none;
+    }
+
+    h1{
+      margin: 0 0 6px 0;
+      font-size: 20px;
+      letter-spacing: .2px;
+    }
+    .subtitle{
+      margin:0;
+      color: rgba(43,42,40,.78);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .topRight{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:flex-start;
+    }
+
+    .pill{
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(43,42,40,.12);
+      background: rgba(255,255,255,.64);
+      box-shadow: 0 6px 16px rgba(43,42,40,.10);
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-size: 13px;
+      color: rgba(43,42,40,.84);
+      user-select:none;
+    }
+
+    .pill strong{
+      color: rgba(43,42,40,.92);
+      font-weight: 700;
+    }
+
+    .btn{
+      -webkit-tap-highlight-color: transparent;
+      appearance:none;
+      border: 1px solid rgba(43,42,40,.14);
+      background: rgba(255,255,255,.70);
+      color: rgba(43,42,40,.88);
+      border-radius: 999px;
+      padding: 10px 12px;
+      cursor:pointer;
+      box-shadow: 0 6px 16px rgba(43,42,40,.10);
+      font: inherit;
+      font-size: 13px;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+      white-space: nowrap;
+    }
+    .btn:hover{ background: rgba(255,255,255,.82); }
+    .btn:active{ transform: translateY(1px); }
+    .btn:focus-visible{ outline: 3px solid rgba(185,168,217,.45); outline-offset: 2px; }
+
+    main{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 14px;
+      align-items:start;
+    }
+
+    @media (max-width: 920px){
+      main{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(43,42,40,.08);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    /* tiny hand-drawn border vibe */
+    .panel::before{
+      content:"";
+      position:absolute; inset:8px;
+      border-radius: calc(var(--radius) - 10px);
+      border: 1px dashed rgba(43,42,40,.12);
+      pointer-events:none;
+    }
+
+    .gardenHeader{
+      padding: 14px 14px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap: 10px;
+    }
+    .gardenHeader h2{
+      margin: 0;
+      font-size: 16px;
+    }
+    .hint{
+      margin: 2px 0 0 0;
+      font-size: 12.5px;
+      color: rgba(43,42,40,.72);
+      line-height:1.35;
+      max-width: 40ch;
+    }
+
+    .gardenArea{
+      position:relative;
+      padding: 0 14px 14px;
+    }
+
+    .gardenGrid{
+      --gap: 10px;
+      display:grid;
+      grid-template-columns: repeat(var(--grid), var(--tile));
+      gap: var(--gap);
+      justify-content:center;
+      padding: 12px 8px 10px;
+      border-radius: var(--radius);
+      background:
+        radial-gradient(120px 80px at 15% 25%, rgba(147,183,161,.18), transparent 60%),
+        radial-gradient(140px 90px at 80% 22%, rgba(185,168,217,.16), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,.25));
+      border: 1px solid rgba(43,42,40,.08);
+      box-shadow: var(--shadow2);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .gardenGrid::after{
+      content:"";
+      position:absolute; inset:-60px;
+      background:
+        radial-gradient(circle at 15% 35%, rgba(242,195,95,.10), transparent 55%),
+        radial-gradient(circle at 78% 30%, rgba(216,138,167,.08), transparent 58%),
+        radial-gradient(circle at 50% 82%, rgba(147,183,161,.10), transparent 58%);
+      pointer-events:none;
+    }
+
+    .tile{
+      width: var(--tile);
+      height: var(--tile);
+      border-radius: 16px;
+      border: 1px solid rgba(43,42,40,.12);
+      background:
+        radial-gradient(18px 14px at 25% 30%, rgba(255,255,255,.25), transparent 70%),
+        radial-gradient(22px 16px at 70% 55%, rgba(255,255,255,.16), transparent 70%),
+        linear-gradient(180deg, rgba(247,238,223,.92), rgba(247,238,223,.72));
+      box-shadow: 0 10px 18px rgba(43,42,40,.10);
+      cursor:pointer;
+      position:relative;
+      overflow:hidden;
+      padding:0;
+      display:grid;
+      place-items:center;
+      -webkit-tap-highlight-color: transparent;
+      user-select:none;
+      z-index:1;
+    }
+    .tile:focus-visible{ outline: 3px solid rgba(147,183,161,.45); outline-offset: 2px; }
+    .tile:hover{ border-color: rgba(43,42,40,.18); }
+
+    /* Soil patch */
+    .tile::before{
+      content:"";
+      position:absolute; left:10px; right:10px; bottom:10px; height:44px;
+      border-radius: 14px 14px 16px 16px;
+      background:
+        radial-gradient(16px 10px at 22% 35%, rgba(255,255,255,.10), transparent 70%),
+        radial-gradient(18px 12px at 78% 52%, rgba(255,255,255,.08), transparent 70%),
+        linear-gradient(180deg, rgba(140,100,70,.55), rgba(110,74,50,.62));
+      border: 1px solid rgba(43,42,40,.14);
+      box-shadow: inset 0 7px 14px rgba(43,42,40,.16);
+    }
+
+    .tile .plant{
+      position:absolute;
+      inset: 10px;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+      transform: translateY(-4px);
+      filter: drop-shadow(0 6px 5px rgba(43,42,40,.14));
+    }
+
+    .tile .waterBadge{
+      position:absolute;
+      top: 8px; right: 8px;
+      width: 18px; height: 18px;
+      border-radius: 999px;
+      background: rgba(185,214,198,.90);
+      border: 1px solid rgba(43,42,40,.12);
+      display:grid;
+      place-items:center;
+      font-size: 12px;
+      transform: rotate(-10deg);
+      box-shadow: 0 8px 16px rgba(43,42,40,.10);
+      opacity: 0;
+      transition: opacity .2s ease, transform .2s ease;
+      pointer-events:none;
+    }
+    .tile.isWatered .waterBadge{
+      opacity: 1;
+      transform: rotate(-10deg) translateY(0);
+    }
+
+    .tile .stageTag{
+      position:absolute;
+      left: 8px; bottom: 8px;
+      padding: 4px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: rgba(43,42,40,.80);
+      background: rgba(255,255,255,.58);
+      border: 1px solid rgba(43,42,40,.10);
+      pointer-events:none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .16s ease, transform .16s ease;
+    }
+    .tile:not(.empty) .stageTag{
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .side{
+      padding: 14px;
+    }
+
+    .woodSign{
+      border-radius: var(--radius);
+      padding: 12px 12px;
+      background:
+        linear-gradient(180deg, rgba(168,116,74,.92), rgba(138,92,57,.92));
+      border: 1px solid rgba(43,42,40,.18);
+      box-shadow: var(--shadow2);
+      color: rgba(255,255,255,.92);
+      position:relative;
+      overflow:hidden;
+      margin-bottom: 12px;
+    }
+    .woodSign::before{
+      content:"";
+      position:absolute; inset:-30px -30px auto auto;
+      width: 140px; height:140px;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.15), transparent 60%);
+      transform: rotate(10deg);
+    }
+    .woodRow{
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      align-items:baseline;
+      margin: 2px 0;
+      position:relative;
+    }
+    .woodRow small{
+      opacity:.86;
+      font-size: 12px;
+    }
+    .woodRow strong{
+      font-size: 14px;
+      letter-spacing: .2px;
+    }
+
+    .controls{
+      border-radius: var(--radius);
+      padding: 12px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(43,42,40,.08);
+      box-shadow: var(--shadow2);
+    }
+    .controls h3{
+      margin:0 0 8px 0;
+      font-size: 14px;
+    }
+    .controls p{
+      margin: 0 0 10px 0;
+      font-size: 12.5px;
+      color: rgba(43,42,40,.74);
+      line-height: 1.35;
+    }
+
+    .toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+      margin: 8px 0 10px;
+    }
+
+    .toolBtn{
+      flex: 1 1 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      min-width: 150px;
+    }
+    .toolBtn[data-active="true"]{
+      border-color: rgba(147,183,161,.48);
+      background: rgba(185,214,198,.40);
+    }
+
+    .seedRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .seedBtn{
+      border-radius: 14px;
+      padding: 10px 10px;
+      border: 1px solid rgba(43,42,40,.12);
+      background: rgba(255,255,255,.70);
+      cursor:pointer;
+      user-select:none;
+      box-shadow: 0 6px 14px rgba(43,42,40,.10);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+    }
+    .seedBtn:active{ transform: translateY(1px); }
+    .seedBtn[data-active="true"]{
+      border-color: rgba(185,168,217,.55);
+      background: rgba(185,168,217,.22);
+    }
+    .seedBtn .seedName{
+      font-size: 13px;
+      color: rgba(43,42,40,.88);
+      font-weight: 700;
+    }
+    .seedBtn .seedDot{
+      width: 14px; height:14px;
+      border-radius: 999px;
+      border: 1px solid rgba(43,42,40,.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+    }
+
+    .row2{
+      display:flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap:wrap;
+    }
+
+    .mini{
+      font-size: 12.5px;
+      padding: 9px 11px;
+    }
+
+    .footerNote{
+      margin-top: 10px;
+      font-size: 12px;
+      color: rgba(43,42,40,.64);
+      line-height:1.35;
+    }
+
+    /* Butterflies overlay */
+    .butterflies{
+      position:absolute;
+      inset: 0;
+      pointer-events:none;
+      overflow:hidden;
+      border-radius: var(--radius);
+    }
+    .bfly{
+      position:absolute;
+      width: 18px;
+      height: 18px;
+      opacity: .92;
+      filter: drop-shadow(0 6px 8px rgba(43,42,40,.14));
+      will-change: transform;
+    }
+
+    /* Daylight overlay */
+    .skyOverlay{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background: radial-gradient(900px 700px at 25% 10%, rgba(255,255,255,.0), rgba(0,0,0,.0));
+      mix-blend-mode:multiply;
+      transition: opacity .35s ease;
+      opacity: 0;
+    }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(255,255,255,.84);
+      border: 1px solid rgba(43,42,40,.12);
+      box-shadow: var(--shadow2);
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: rgba(43,42,40,.82);
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .22s ease, transform .22s ease;
+      max-width: min(86vw, 740px);
+      text-align:center;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .srOnly{
+      position:absolute!important;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden; clip:rect(0,0,0,0);
+      white-space:nowrap; border:0;
+    }
+  </style>
+</head>
+<body>
+  <div class="skyOverlay" id="skyOverlay" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Little Meadow Garden</h1>
+        <p class="subtitle">h-hi… I made you a tiny cottage garden… click to plant seeds, then water them gently until they bloom. no stress, ok? &nbsp;>///<</p>
+      </div>
+
+      <div class="topRight">
+        <div class="pill" title="Cozy progress">
+          <span>🌸</span>
+          <span>Blooms: <strong id="statBlooms">0</strong></span>
+        </div>
+        <div class="pill" title="Today’s vibe">
+          <span>☁️</span>
+          <span>Time: <strong id="statTime">Morning</strong></span>
+        </div>
+        <button class="btn" id="btnSound" type="button" aria-pressed="false" title="Toggle sound (requires interaction)">
+          🔈 Sound: Off
+        </button>
+        <button class="btn" id="btnReset" type="button" title="Reset garden">
+          ♻ Reset
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div class="gardenHeader">
+          <div>
+            <h2>Your cottage plot</h2>
+            <p class="hint" id="hintText">Tip: pick a seed, then click a soil square to plant. Switch to the watering can to help it grow faster. ✿</p>
+          </div>
+          <div class="pill" title="What you’re holding right now">
+            <span id="statToolIcon">🌱</span>
+            <span>Tool: <strong id="statTool">Plant</strong></span>
+          </div>
+        </div>
+
+        <div class="gardenArea">
+          <div class="gardenGrid" id="gardenGrid" role="grid" aria-label="Garden grid (4 by 4)"></div>
+          <div class="butterflies" id="butterflies" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <aside class="side panel">
+        <div class="woodSign" aria-label="Wooden sign stats">
+          <div class="woodRow"><small>Planted</small><strong id="statPlanted">0</strong></div>
+          <div class="woodRow"><small>Sprouting</small><strong id="statSprouts">0</strong></div>
+          <div class="woodRow"><small>Blooming</small><strong id="statBlooming">0</strong></div>
+          <div class="woodRow"><small>Butterflies</small><strong id="statBflies">0</strong></div>
+        </div>
+
+        <div class="controls" aria-label="Controls">
+          <h3>Cozy tools</h3>
+          <p>Choose a seed (planting), or pick the watering can. Plants have 3 stages: seed → sprout → bloom.</p>
+
+          <div class="toolbar">
+            <button class="btn toolBtn" id="toolPlant" type="button" data-active="true">
+              🌱 Plant
+            </button>
+            <button class="btn toolBtn" id="toolWater" type="button" data-active="false">
+              💧 Water
+            </button>
+          </div>
+
+          <div class="seedRow" aria-label="Seeds">
+            <button class="seedBtn" id="seedSunflower" type="button" data-seed="sunflower" data-active="true" title="Sunflower seeds">
+              <span class="seedName">Sunflower</span><span class="seedDot" style="background: var(--sun);"></span>
+            </button>
+            <button class="seedBtn" id="seedLavender" type="button" data-seed="lavender" data-active="false" title="Lavender seeds">
+              <span class="seedName">Lavender</span><span class="seedDot" style="background: var(--lav);"></span>
+            </button>
+            <button class="seedBtn" id="seedRose" type="button" data-seed="rose" data-active="false" title="Rose seeds">
+              <span class="seedName">Rose</span><span class="seedDot" style="background: var(--rose);"></span>
+            </button>
+            <button class="seedBtn" id="seedDaisy" type="button" data-seed="daisy" data-active="false" title="Daisy seeds">
+              <span class="seedName">Daisy</span><span class="seedDot" style="background: var(--daisy);"></span>
+            </button>
+          </div>
+
+          <div class="row2">
+            <button class="btn mini" id="btnNudgeTime" type="button" title="Cycle time of day">
+              🌤 Cycle time
+            </button>
+            <button class="btn mini" id="btnHelp" type="button" title="How to play">
+              📜 Help
+            </button>
+            <button class="btn mini" id="btnSave" type="button" title="Save to browser">
+              💾 Save
+            </button>
+          </div>
+
+          <div class="footerNote">
+            <strong>Goal:</strong> just… relax and fill the plot with blooms. there’s no losing here, promise… eep.
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="srOnly" id="srAnnounce" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const GRID = 4;
+      const TILES = GRID * GRID;
+
+      const PLANTS = {
+        sunflower: { name: "Sunflower", hue: "var(--sun)", stem: "#5f8e62", growSeconds: 46 },
+        lavender:  { name: "Lavender",  hue: "var(--lav)", stem: "#5c8465", growSeconds: 52 },
+        rose:      { name: "Rose",      hue: "var(--rose)", stem: "#577f60", growSeconds: 58 },
+        daisy:     { name: "Daisy",     hue: "var(--daisy)", stem: "#5e8a63", growSeconds: 44 },
+      };
+
+      const STAGES = [
+        { key:"seed",   label:"seed",   min:0,   max:34 },
+        { key:"sprout", label:"sprout", min:34,  max:67 },
+        { key:"bloom",  label:"bloom",  min:67,  max:101 },
+      ];
+
+      const STORAGE_KEY = "little_meadow_garden_v1";
+
+      const $ = (id) => document.getElementById(id);
+
+      const elGrid = $("gardenGrid");
+      const elBflies = $("butterflies");
+      const elToast = $("toast");
+      const elSr = $("srAnnounce");
+      const elSky = $("skyOverlay");
+
+      const statBlooms = $("statBlooms");
+      const statPlanted = $("statPlanted");
+      const statSprouts = $("statSprouts");
+      const statBlooming = $("statBlooming");
+      const statBflies = $("statBflies");
+      const statTool = $("statTool");
+      const statToolIcon = $("statToolIcon");
+      const statTime = $("statTime");
+      const hintText = $("hintText");
+
+      const btnSound = $("btnSound");
+      const btnReset = $("btnReset");
+      const btnNudgeTime = $("btnNudgeTime");
+      const btnHelp = $("btnHelp");
+      const btnSave = $("btnSave");
+
+      const toolPlant = $("toolPlant");
+      const toolWater = $("toolWater");
+
+      const seedButtons = [
+        $("seedSunflower"),
+        $("seedLavender"),
+        $("seedRose"),
+        $("seedDaisy"),
+      ];
+
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+      const lerp = (a,b,t) => a + (b-a) * t;
+
+      function nowMs(){ return performance.now(); }
+
+      // --- Cute tiny audio engine (WebAudio, no external files)
+      const audio = {
+        ctx: null,
+        enabled: false,
+        master: null,
+        wind: null,
+        windGain: null,
+        init(){
+          if (this.ctx) return;
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return;
+          this.ctx = new Ctx();
+
+          this.master = this.ctx.createGain();
+          this.master.gain.value = 0.22;
+          this.master.connect(this.ctx.destination);
+
+          // Gentle wind: filtered noise
+          const bufferSize = 2 * this.ctx.sampleRate;
+          const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const out = noiseBuffer.getChannelData(0);
+          for (let i=0;i<bufferSize;i++){
+            out[i] = (Math.random()*2-1) * 0.45;
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = noiseBuffer;
+          noise.loop = true;
+
+          const biquad = this.ctx.createBiquadFilter();
+          biquad.type = "lowpass";
+          biquad.frequency.value = 520;
+          biquad.Q.value = 0.6;
+
+          const gain = this.ctx.createGain();
+          gain.gain.value = 0.0;
+
+          noise.connect(biquad);
+          biquad.connect(gain);
+          gain.connect(this.master);
+
+          noise.start();
+
+          this.wind = noise;
+          this.windGain = gain;
+        },
+        async setEnabled(v){
+          this.init();
+          if (!this.ctx) return;
+
+          // Must resume on gesture on some browsers
+          if (this.ctx.state !== "running") {
+            try { await this.ctx.resume(); } catch {}
+          }
+          this.enabled = !!v;
+          if (this.windGain){
+            const t = this.ctx.currentTime;
+            this.windGain.gain.cancelScheduledValues(t);
+            this.windGain.gain.setValueAtTime(this.windGain.gain.value, t);
+            this.windGain.gain.linearRampToValueAtTime(this.enabled ? 0.22 : 0.0, t + 0.5);
+          }
+        },
+        chime(){
+          if (!this.enabled || !this.ctx) return;
+          const t = this.ctx.currentTime;
+
+          const g = this.ctx.createGain();
+          g.gain.value = 0.0001;
+          g.connect(this.master);
+
+          // soft bell-ish stack
+          const freqs = [523.25, 659.25, 784.0]; // C5 E5 G5
+          freqs.forEach((f, i) => {
+            const o = this.ctx.createOscillator();
+            o.type = "sine";
+            o.frequency.value = f * (i===2 ? 0.5 : 1);
+            const og = this.ctx.createGain();
+            og.gain.value = 0.0001;
+            o.connect(og);
+            og.connect(g);
+            o.start(t);
+            o.stop(t + 1.0);
+            og.gain.exponentialRampToValueAtTime(0.25 / (i+1), t + 0.02);
+            og.gain.exponentialRampToValueAtTime(0.0001, t + 0.95);
+          });
+
+          g.gain.exponentialRampToValueAtTime(0.55, t + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 1.0);
+
+          setTimeout(() => { try { g.disconnect(); } catch {} }, 1300);
+        },
+        splash(){
+          if (!this.enabled || !this.ctx) return;
+          const t = this.ctx.currentTime;
+
+          const o = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          const f = this.ctx.createBiquadFilter();
+
+          o.type = "triangle";
+          o.frequency.setValueAtTime(420, t);
+          o.frequency.exponentialRampToValueAtTime(180, t + 0.14);
+
+          f.type = "lowpass";
+          f.frequency.setValueAtTime(1400, t);
+          f.frequency.exponentialRampToValueAtTime(520, t + 0.16);
+
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.24, t + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+
+          o.connect(f); f.connect(g); g.connect(this.master);
+          o.start(t);
+          o.stop(t + 0.2);
+
+          setTimeout(() => { try { g.disconnect(); } catch {} }, 350);
+        }
+      };
+
+      // --- Game state
+      const state = {
+        tool: "plant",            // plant | water
+        selectedSeed: "sunflower",
+        tiles: Array.from({length:TILES}, () => null),
+        blooms: 0,
+        timeOfDay: 0,             // 0 morning, 1 afternoon, 2 evening
+        butterflies: [],          // {id,x,y,vx,vy,life,el}
+        nextBflyId: 1,
+        sound: false,
+        lastTickMs: nowMs(),
+      };
+
+      // --- UI helpers
+      let toastTimer = null;
+      function toast(msg, ms=1700){
+        elToast.textContent = msg;
+        elToast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => elToast.classList.remove("show"), ms);
+      }
+      function announce(msg){
+        elSr.textContent = msg;
+      }
+
+      function setTool(tool){
+        state.tool = tool;
+        toolPlant.dataset.active = (tool === "plant");
+        toolWater.dataset.active = (tool === "water");
+        statTool.textContent = tool === "plant" ? "Plant" : "Water";
+        statToolIcon.textContent = tool === "plant" ? "🌱" : "💧";
+
+        if (tool === "plant"){
+          hintText.textContent = "Pick a seed, then click a soil square to plant. Water later to help it grow faster. ✿";
+        } else {
+          hintText.textContent = "Click on planted squares to water. A watered plant grows faster (splash splash…).";
+        }
+      }
+
+      function setSeed(seed){
+        state.selectedSeed = seed;
+        seedButtons.forEach(b => b.dataset.active = (b.dataset.seed === seed));
+        // cozy UX: selecting a seed brings you back to planting
+        setTool("plant");
+        toast(`You’re holding ${PLANTS[seed].name} seeds…`);
+      }
+
+      function setTimeOfDay(n){
+        state.timeOfDay = ((n%3)+3)%3;
+        const label = ["Morning", "Afternoon", "Evening"][state.timeOfDay];
+        statTime.textContent = label;
+
+        // gentle overlay changes
+        // morning: none, afternoon: warm, evening: dusky
+        const op = [0.00, 0.10, 0.22][state.timeOfDay];
+        elSky.style.opacity = String(op);
+        elSky.style.background =
+          state.timeOfDay === 2
+            ? "radial-gradient(900px 700px at 25% 10%, rgba(150,160,190,.00), rgba(60,70,95,.35))"
+            : state.timeOfDay === 1
+              ? "radial-gradient(900px 700px at 25% 10%, rgba(255,255,255,.00), rgba(120,90,60,.22))"
+              : "radial-gradient(900px 700px at 25% 10%, rgba(255,255,255,.00), rgba(0,0,0,.00))";
+      }
+
+      function stageFromProgress(p){
+        for (const s of STAGES){
+          if (p >= s.min && p < s.max) return s.key;
+        }
+        return "bloom";
+      }
+
+      function prettyStage(stage){
+        if (stage === "seed") return "seed";
+        if (stage === "sprout") return "sprout";
+        return "bloom";
+      }
+
+      function plantSvg(type, stage){
+        const p = PLANTS[type];
+        const petal = p.hue;
+        const stem = p.stem;
+
+        // Tiny storybook-ish SVG; 3 variants.
+        // Using currentColor-ish variables for vibe.
+        if (stage === "seed"){
+          return `
+            <svg width="62" height="62" viewBox="0 0 62 62" aria-hidden="true">
+              <defs>
+                <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="rgba(43,42,40,.20)"/>
+                </filter>
+              </defs>
+              <g filter="url(#s)">
+                <path d="M20 38c6-9 16-9 22 0" fill="none" stroke="rgba(43,42,40,.18)" stroke-width="3" stroke-linecap="round"/>
+                <ellipse cx="31" cy="39" rx="6.6" ry="4.8" fill="rgba(43,42,40,.22)"/>
+                <ellipse cx="29" cy="38" rx="3" ry="2.2" fill="rgba(255,255,255,.20)"/>
+              </g>
+            </svg>
+          `;
+        }
+
+        if (stage === "sprout"){
+          return `
+            <svg width="68" height="68" viewBox="0 0 68 68" aria-hidden="true">
+              <defs>
+                <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="1.8" flood-color="rgba(43,42,40,.18)"/>
+                </filter>
+              </defs>
+              <g filter="url(#s)">
+                <path d="M34 54c0-10 0-22 0-28" stroke="${stem}" stroke-width="5" stroke-linecap="round"/>
+                <path d="M34 36c-7-6-14-3-17 2c8 4 14 4 17-2Z" fill="rgba(147,183,161,.62)" stroke="rgba(43,42,40,.12)" stroke-width="1"/>
+                <path d="M34 34c7-6 14-3 17 2c-8 4-14 4-17-2Z" fill="rgba(147,183,161,.56)" stroke="rgba(43,42,40,.12)" stroke-width="1"/>
+                <ellipse cx="34" cy="55" rx="10.5" ry="5.5" fill="rgba(43,42,40,.18)"/>
+              </g>
+            </svg>
+          `;
+        }
+
+        // bloom
+        const flowerCenter = type === "sunflower" ? "#6b4c2c"
+                           : type === "daisy" ? "#f2c35f"
+                           : type === "rose" ? "rgba(255,255,255,.36)"
+                           : "rgba(255,255,255,.30)";
+
+        const petalStroke = "rgba(43,42,40,.12)";
+
+        // A few petals around a center; slightly different for each plant.
+        const petals = type === "lavender"
+          ? `
+              <g transform="translate(34 22)">
+                ${Array.from({length:7}).map((_,i)=>{
+                  const a = (i/7)*Math.PI*2;
+                  const x = Math.cos(a)*10.5, y = Math.sin(a)*10.5;
+                  return `<ellipse cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" rx="5.2" ry="7.2" fill="${petal}" stroke="${petalStroke}" stroke-width="1" transform="rotate(${(a*180/Math.PI).toFixed(2)})"/>`;
+                }).join("")}
+                <circle r="6.6" fill="${flowerCenter}" stroke="${petalStroke}" stroke-width="1"/>
+              </g>
+            `
+          : type === "rose"
+            ? `
+              <g transform="translate(34 23)">
+                <path d="M0-13c9 0 13 7 13 13S9 13 0 13-13 6-13 0-9-13 0-13Z"
+                      fill="${petal}" stroke="${petalStroke}" stroke-width="1"/>
+                <path d="M-2-6c6-1 8 2 9 5c-4 3-8 4-13 2c-3-4-1-7 4-7Z"
+                      fill="rgba(255,255,255,.18)" stroke="rgba(43,42,40,.10)" stroke-width="1"/>
+                <circle r="3.4" fill="${flowerCenter}" opacity=".55"/>
+              </g>
+            `
+            : type === "daisy"
+              ? `
+                <g transform="translate(34 22)">
+                  ${Array.from({length:10}).map((_,i)=>{
+                    const a = (i/10)*Math.PI*2;
+                    const x = Math.cos(a)*12.2, y = Math.sin(a)*12.2;
+                    return `<ellipse cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" rx="4.5" ry="8.2" fill="${petal}" stroke="${petalStroke}" stroke-width="1" transform="rotate(${(a*180/Math.PI).toFixed(2)})"/>`;
+                  }).join("")}
+                  <circle r="6.2" fill="${flowerCenter}" stroke="${petalStroke}" stroke-width="1"/>
+                </g>
+              `
+              : `
+                <g transform="translate(34 22)">
+                  ${Array.from({length:9}).map((_,i)=>{
+                    const a = (i/9)*Math.PI*2;
+                    const x = Math.cos(a)*12.2, y = Math.sin(a)*12.2;
+                    return `<ellipse cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" rx="5.2" ry="8.4" fill="${petal}" stroke="${petalStroke}" stroke-width="1" transform="rotate(${(a*180/Math.PI).toFixed(2)})"/>`;
+                  }).join("")}
+                  <circle r="6.8" fill="${flowerCenter}" stroke="${petalStroke}" stroke-width="1"/>
+                </g>
+              `;
+
+        return `
+          <svg width="74" height="74" viewBox="0 0 74 74" aria-hidden="true">
+            <defs>
+              <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(43,42,40,.18)"/>
+              </filter>
+            </defs>
+            <g filter="url(#s)">
+              <path d="M37 62c0-10 0-18 0-26" stroke="${stem}" stroke-width="5" stroke-linecap="round"/>
+              <path d="M37 45c-8-6-15-2-18 2c8 5 15 5 18-2Z" fill="rgba(147,183,161,.55)" stroke="rgba(43,42,40,.12)" stroke-width="1"/>
+              <path d="M37 43c8-6 15-2 18 2c-8 5-15 5-18-2Z" fill="rgba(147,183,161,.50)" stroke="rgba(43,42,40,.12)" stroke-width="1"/>
+              ${petals}
+              <ellipse cx="37" cy="63" rx="12.5" ry="6.2" fill="rgba(43,42,40,.16)"/>
+            </g>
+          </svg>
+        `;
+      }
+
+      function tileLabel(tile){
+        if (!tile) return "Empty soil. Click to plant.";
+        const p = PLANTS[tile.type]?.name || "Plant";
+        const stage = prettyStage(stageFromProgress(tile.progress));
+        const watered = tile.watered > 0.1 ? "Watered." : "Dry.";
+        return `${p}, ${stage}. ${watered} Progress ${Math.round(tile.progress)} percent.`;
+      }
+
+      function renderTile(i){
+        const btn = elGrid.querySelector(`button[data-i="${i}"]`);
+        const tile = state.tiles[i];
+        if (!btn) return;
+
+        if (!tile){
+          btn.classList.add("empty");
+          btn.classList.remove("isWatered");
+          btn.innerHTML = `
+            <div class="plant" aria-hidden="true"></div>
+            <div class="waterBadge" aria-hidden="true">💧</div>
+            <div class="stageTag" aria-hidden="true"></div>
+          `;
+          btn.setAttribute("aria-label", tileLabel(null));
+          return;
+        }
+
+        const stage = stageFromProgress(tile.progress);
+        btn.classList.remove("empty");
+        btn.classList.toggle("isWatered", tile.watered > 0.1);
+
+        const tag = stage === "bloom" ? "bloom" : stage;
+        btn.innerHTML = `
+          <div class="plant" aria-hidden="true">${plantSvg(tile.type, stage)}</div>
+          <div class="waterBadge" aria-hidden="true">💧</div>
+          <div class="stageTag" aria-hidden="true">${tag}</div>
+        `;
+        btn.setAttribute("aria-label", tileLabel(tile));
+      }
+
+      function renderAll(){
+        // grid
+        for (let i=0;i<TILES;i++) renderTile(i);
+
+        // stats
+        let planted = 0, sprouts = 0, blooming = 0;
+        for (const t of state.tiles){
+          if (!t) continue;
+          planted++;
+          const s = stageFromProgress(t.progress);
+          if (s === "sprout") sprouts++;
+          if (s === "bloom") blooming++;
+        }
+        statBlooms.textContent = String(state.blooms);
+        statPlanted.textContent = String(planted);
+        statSprouts.textContent = String(sprouts);
+        statBlooming.textContent = String(blooming);
+        statBflies.textContent = String(state.butterflies.length);
+
+        // sound UI
+        btnSound.textContent = state.sound ? "🔊 Sound: On" : "🔈 Sound: Off";
+        btnSound.setAttribute("aria-pressed", state.sound ? "true" : "false");
+      }
+
+      function spawnButterfly(nearIndex=null){
+        // Place near a tile, else random
+        const rect = elGrid.getBoundingClientRect();
+        let x = Math.random() * rect.width;
+        let y = Math.random() * rect.height;
+
+        if (nearIndex !== null){
+          const tileBtn = elGrid.querySelector(`button[data-i="${nearIndex}"]`);
+          if (tileBtn){
+            const r = tileBtn.getBoundingClientRect();
+            x = (r.left - rect.left) + r.width * 0.5 + (Math.random()*18-9);
+            y = (r.top - rect.top) + r.height * 0.25 + (Math.random()*14-7);
+          }
+        }
+
+        const id = state.nextBflyId++;
+        const el = document.createElement("div");
+        el.className = "bfly";
+        el.innerHTML = butterflySvg();
+        elBflies.appendChild(el);
+
+        const vx = (Math.random() * 2 - 1) * 24;
+        const vy = (Math.random() * 2 - 1) * 18;
+        const life = 10 + Math.random() * 9;
+
+        state.butterflies.push({ id, x, y, vx, vy, life, el, t:0, flap: Math.random()*10 });
+      }
+
+      function butterflySvg(){
+        // tiny butterfly svg (pastel)
+        const colors = ["rgba(185,168,217,.95)", "rgba(185,214,198,.95)", "rgba(242,195,95,.95)", "rgba(216,138,167,.95)"];
+        const c = colors[(Math.random()*colors.length)|0];
+        return `
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path d="M9 9c-1.2-3.6-4.2-6.1-7-4.5c-2.2 1.3-1.4 5.2 2.1 6.4C6.2 11.6 8 10.9 9 9Z"
+                  fill="${c}" stroke="rgba(43,42,40,.12)" stroke-width=".8" stroke-linejoin="round"/>
+            <path d="M9 9c1.2-3.6 4.2-6.1 7-4.5c2.2 1.3 1.4 5.2-2.1 6.4C11.8 11.6 10 10.9 9 9Z"
+                  fill="${c}" stroke="rgba(43,42,40,.12)" stroke-width=".8" stroke-linejoin="round"/>
+            <path d="M9 7.2c.8 1.2.8 2.4 0 3.6" stroke="rgba(43,42,40,.22)" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        `;
+      }
+
+      // --- Core interactions
+      function tryPlant(i){
+        if (state.tiles[i]) {
+          toast("That spot is already taken… s-sorry!");
+          return;
+        }
+        const type = state.selectedSeed;
+        state.tiles[i] = {
+          type,
+          progress: 0,
+          watered: 0,
+          bloomed: false,
+          plantedAt: Date.now(),
+        };
+        audio.chime(); // tiny positive feedback
+        announce(`Planted ${PLANTS[type].name}.`);
+        renderTile(i);
+      }
+
+      function tryWater(i){
+        const t = state.tiles[i];
+        if (!t){
+          toast("You watered empty soil… it’s ok, it happens…");
+          audio.splash();
+          return;
+        }
+        t.watered = clamp(t.watered + 0.75, 0, 1.25);
+        audio.splash();
+        announce(`Watered ${PLANTS[t.type].name}.`);
+        renderTile(i);
+      }
+
+      function onTileClick(i){
+        // Unlock audio on first gesture if sound is on
+        if (state.sound) audio.setEnabled(true);
+
+        if (state.tool === "plant") tryPlant(i);
+        else tryWater(i);
+
+        // Gentle autosave
+        save(false);
+        renderAll();
+      }
+
+      // --- Growth tick
+      function tick(dt){
+        let anyBloomedNow = false;
+        for (let i=0;i<TILES;i++){
+          const t = state.tiles[i];
+          if (!t) continue;
+
+          // dryness
+          t.watered = clamp(t.watered - dt * 0.030, 0, 1.25);
+
+          const base = 100 / (PLANTS[t.type].growSeconds);
+          const waterBoost = 1 + t.watered * 1.25;
+          const timeBoost = state.timeOfDay === 1 ? 1.06 : state.timeOfDay === 2 ? 0.98 : 1.00;
+
+          t.progress = clamp(t.progress + base * waterBoost * timeBoost * dt, 0, 100);
+
+          const stage = stageFromProgress(t.progress);
+          if (stage === "bloom" && !t.bloomed){
+            t.bloomed = true;
+            state.blooms++;
+            anyBloomedNow = true;
+            spawnButterfly(i);
+            audio.chime();
+            toast("A flower bloomed… eep… it’s so pretty!");
+            announce(`A ${PLANTS[t.type].name} bloomed.`);
+          }
+        }
+
+        // butterfly movement
+        const rect = elGrid.getBoundingClientRect();
+        for (let b = state.butterflies.length-1; b>=0; b--){
+          const bf = state.butterflies[b];
+          bf.life -= dt;
+          bf.t += dt;
+          bf.flap += dt * 10;
+
+          // gentle steering
+          bf.vx += (Math.random()*2-1) * 10 * dt;
+          bf.vy += (Math.random()*2-1) * 8 * dt;
+
+          // damp + clamp
+          bf.vx *= Math.pow(0.88, dt);
+          bf.vy *= Math.pow(0.88, dt);
+          bf.vx = clamp(bf.vx, -55, 55);
+          bf.vy = clamp(bf.vy, -45, 45);
+
+          bf.x += bf.vx * dt;
+          bf.y += bf.vy * dt;
+
+          // keep within garden bounds
+          bf.x = clamp(bf.x, -10, rect.width + 10);
+          bf.y = clamp(bf.y, -10, rect.height + 10);
+
+          // update DOM
+          const wobble = Math.sin(bf.flap) * 8;
+          const rot = Math.sin(bf.flap * 0.7) * 18 + (bf.vx * 0.15);
+          const opacity = clamp(bf.life / 2.8, 0, 1);
+
+          bf.el.style.opacity = String(0.25 + opacity * 0.75);
+          bf.el.style.transform = `translate(${bf.x.toFixed(1)}px, ${bf.y.toFixed(1)}px) rotate(${rot.toFixed(1)}deg) translateY(${wobble.toFixed(1)}px)`;
+
+          if (bf.life <= 0){
+            try { bf.el.remove(); } catch {}
+            state.butterflies.splice(b, 1);
+          }
+        }
+
+        if (anyBloomedNow){
+          // a little extra save when something special happens
+          save(false);
+        }
+      }
+
+      let lastRaf = nowMs();
+      function loop(){
+        const t = nowMs();
+        const dt = clamp((t - lastRaf) / 1000, 0, 0.08);
+        lastRaf = t;
+        tick(dt);
+        if ((Math.random() < 0.008) && state.butterflies.length < 8){
+          // occasional ambient butterfly
+          spawnButterfly(null);
+        }
+        renderAll();
+        requestAnimationFrame(loop);
+      }
+
+      // --- Save/load/reset
+      function save(showToast=true){
+        const payload = {
+          tool: state.tool,
+          selectedSeed: state.selectedSeed,
+          tiles: state.tiles,
+          blooms: state.blooms,
+          timeOfDay: state.timeOfDay,
+          sound: state.sound
+        };
+        try{
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          if (showToast) toast("Saved in your browser… (so cozy!)");
+        } catch {
+          if (showToast) toast("S-sorry… I couldn’t save here.");
+        }
+      }
+
+      function load(){
+        try{
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return false;
+          const data = JSON.parse(raw);
+
+          if (!data || !Array.isArray(data.tiles) || data.tiles.length !== TILES) return false;
+
+          state.tool = data.tool === "water" ? "water" : "plant";
+          state.selectedSeed = (data.selectedSeed in PLANTS) ? data.selectedSeed : "sunflower";
+          state.tiles = data.tiles.map(t => {
+            if (!t) return null;
+            if (!t.type || !(t.type in PLANTS)) return null;
+            return {
+              type: t.type,
+              progress: clamp(Number(t.progress||0), 0, 100),
+              watered: clamp(Number(t.watered||0), 0, 1.25),
+              bloomed: !!t.bloomed,
+              plantedAt: t.plantedAt || Date.now()
+            };
+          });
+          state.blooms = Math.max(0, Number(data.blooms||0));
+          state.timeOfDay = clamp(Number(data.timeOfDay||0), 0, 2);
+          state.sound = !!data.sound;
+
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      function reset(){
+        if (!confirm("Reset the whole garden? (it’s ok… we can start fresh, hehe)")) return;
+        state.tiles = Array.from({length:TILES}, () => null);
+        state.blooms = 0;
+
+        // clear butterflies
+        state.butterflies.forEach(b => { try { b.el.remove(); } catch {} });
+        state.butterflies = [];
+        save(false);
+        renderAll();
+        toast("Garden reset… the soil is ready again.");
+        announce("Garden reset.");
+      }
+
+      // --- Setup DOM
+      function initGrid(){
+        elGrid.style.setProperty("--grid", GRID);
+        // tile size scales down on small screens
+        const mq = window.matchMedia("(max-width: 520px)");
+        function setTileSize(){
+          document.documentElement.style.setProperty("--tile", mq.matches ? "78px" : "96px");
+        }
+        setTileSize();
+        mq.addEventListener?.("change", setTileSize);
+
+        elGrid.innerHTML = "";
+        for (let i=0;i<TILES;i++){
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "tile empty";
+          b.dataset.i = String(i);
+          b.setAttribute("role", "gridcell");
+          b.setAttribute("aria-label", tileLabel(null));
+          b.addEventListener("click", () => onTileClick(i));
+          elGrid.appendChild(b);
+          renderTile(i);
+        }
+      }
+
+      // --- Bind controls
+      toolPlant.addEventListener("click", () => setTool("plant"));
+      toolWater.addEventListener("click", () => setTool("water"));
+
+      seedButtons.forEach(btn => {
+        btn.addEventListener("click", () => setSeed(btn.dataset.seed));
+      });
+
+      btnReset.addEventListener("click", reset);
+
+      btnNudgeTime.addEventListener("click", () => {
+        setTimeOfDay(state.timeOfDay + 1);
+        save(false);
+        toast(`Time shifted to ${statTime.textContent}…`);
+      });
+
+      btnHelp.addEventListener("click", () => {
+        toast("How to play: pick a seed → click soil to plant. Switch to 💧 to water. Watch seed → sprout → bloom. That’s it… nice and slow. UwU", 3500);
+      });
+
+      btnSave.addEventListener("click", () => save(true));
+
+      btnSound.addEventListener("click", async () => {
+        state.sound = !state.sound;
+        await audio.setEnabled(state.sound);
+        save(false);
+        renderAll();
+        toast(state.sound ? "S-sound is on… gentle wind time…" : "Sound is off… quiet garden…");
+      });
+
+      // allow keyboard shortcuts (soft and tiny)
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "1") setTool("plant");
+        if (e.key === "2") setTool("water");
+        if (e.key.toLowerCase() === "t") setTimeOfDay(state.timeOfDay + 1);
+        if (e.key.toLowerCase() === "s") save(true);
+      });
+
+      // --- Boot
+      initGrid();
+
+      const loaded = load();
+      setSeed(state.selectedSeed);
+      setTool(state.tool);
+      setTimeOfDay(state.timeOfDay);
+
+      // reflect loaded sound state
+      renderAll();
+
+      if (loaded){
+        toast("Welcome back… your little meadow remembered you…", 2200);
+      } else {
+        toast("Welcome… plant something cute? (no rush…)", 2200);
+      }
+
+      // Start loop
+      requestAnimationFrame(() => {
+        lastRaf = nowMs();
+        loop();
+      });
+    })();
+  </script>
+</body>
+</html>
